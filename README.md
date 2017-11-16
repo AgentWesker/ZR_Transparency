@@ -1,5 +1,6 @@
 # ZR_Transparency
-Humans in close proximity become transparent
+Humans in close proximity become transparent <br>
+**Requires sv_disable_immunity_alpha "1"**
 <br><br>
 ## Convars:
 ```
