@@ -8,7 +8,7 @@
 #pragma newdecls required
 
 #define PLUGIN_AUTHOR "Agent Wesker"
-#define PLUGIN_VERSION "1.0"
+#define PLUGIN_VERSION "1.1"
 
 //Bit Macros
 #define SetBit(%1,%2)      (%1[%2>>5] |= (1<<(%2 & 31)))
@@ -17,9 +17,13 @@
 
 //Global Variables
 ConVar g_ConVar_Distance; //Distance ConVar
+ConVar g_ConVar_CheckDelay; //Check Delay ConVar
+ConVar g_ConVar_UndoDelay; //Undo Delay ConVar
 float g_fCheckTime[MAXPLAYERS+1]; //Player check time array
 float g_fUndoTime[MAXPLAYERS+1]; //Player undo time array
 float g_fDistance; //Distance ConVar
+float g_fCheckDelay; //Check Delay ConVar
+float g_fUndoDelay; //Undo Delay ConVar
 int g_iTagged[(MAXPLAYERS >> 5) + 1]; //Bool array whether player is transparent or not
 int g_iSkip[(MAXPLAYERS >> 5) + 1]; //Bool array whether player is zombie / invalid or not
 
@@ -38,6 +42,14 @@ public void OnPluginStart()
 	g_fDistance = GetConVarFloat(g_ConVar_Distance);
 	HookConVarChange(g_ConVar_Distance, OnConVarChanged);
 	
+	g_ConVar_CheckDelay = CreateConVar("sm_transparency_check", "0.5", "Time (in seconds) between checking opaque player distance", 0, true, 0.0, true, 30.0);
+	g_fCheckDelay = GetConVarFloat(g_ConVar_CheckDelay);
+	HookConVarChange(g_ConVar_CheckDelay, OnConVarChanged);
+	
+	g_ConVar_UndoDelay = CreateConVar("sm_transparency_undo", "2.0", "Time (in seconds) between checking transparent player distance", 0, true, 0.0, true, 50.0);
+	g_fUndoDelay = GetConVarFloat(g_ConVar_UndoDelay);
+	HookConVarChange(g_ConVar_UndoDelay, OnConVarChanged);
+	
 	HookEvent("player_spawned", OnPlayerSpawned);
 }
 
@@ -45,6 +57,10 @@ public void OnConVarChanged(ConVar convar, const char[] oldVal, const char[] new
 {
 	if (convar == g_ConVar_Distance) {
 		g_fDistance = StringToFloat(newVal);
+	} else if (convar == g_ConVar_CheckDelay) {
+		g_fCheckDelay = StringToFloat(newVal);
+	} else if (convar == g_ConVar_UndoDelay) {
+		g_fUndoDelay = StringToFloat(newVal);
 	}
 }
 
@@ -148,11 +164,14 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			
 			if (GetVectorDistance(clientOrigin, compOrigin) < g_fDistance)
 			{
-				SetBit(g_iTagged, i);
-				SetEntityRenderMode(i, RENDER_TRANSCOLOR);
-				SetEntityRenderColor(i, 0,0,0,100);
-				g_fUndoTime[i] = GetGameTime() + 3.0;
-				g_fUndoTime[client] = GetGameTime() + 3.0;
+				if (!CheckBit(g_iTagged, i))
+				{
+					SetBit(g_iTagged, i);
+					SetEntityRenderMode(i, RENDER_TRANSCOLOR);
+					SetEntityRenderColor(i, 0,0,0,100);
+				}
+				g_fUndoTime[i] = GetGameTime() + g_fUndoDelay;
+				g_fUndoTime[client] = GetGameTime() + g_fUndoDelay;
 				virginity = false;
 				break;
 			}
@@ -163,7 +182,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			ClearBit(g_iTagged, client);
 			SetEntityRenderMode(client, RENDER_NONE);
    			SetEntityRenderColor(client, 0,0,0,0);
-   			g_fCheckTime[client] = GetGameTime() + 1.0;
+   			g_fCheckTime[client] = GetGameTime() + g_fCheckDelay;
 		}
 		
 	} else {
@@ -206,18 +225,18 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				SetBit(g_iTagged, i);
 				SetEntityRenderMode(i, RENDER_TRANSCOLOR);
 				SetEntityRenderColor(i, 0,0,0,100);
-				g_fUndoTime[i] = GetGameTime() + 3.0;
+				g_fUndoTime[i] = GetGameTime() + g_fUndoDelay;
 				SetBit(g_iTagged, client);
 				SetEntityRenderMode(client, RENDER_TRANSCOLOR);
 				SetEntityRenderColor(client, 0,0,0,100);
-				g_fUndoTime[client] = GetGameTime() + 3.0;
+				g_fUndoTime[client] = GetGameTime() + g_fUndoDelay;
 				break;
 			}
 		}
 		//If nothing happened, set the delay (1 second)
 		if (!CheckBit(g_iTagged, client))
 		{
-			g_fCheckTime[client] = GetGameTime() + 1.0;
+			g_fCheckTime[client] = GetGameTime() + g_fCheckDelay;
 		}
 	}
 
