@@ -8,7 +8,7 @@
 #pragma newdecls required
 
 #define PLUGIN_AUTHOR "Agent Wesker"
-#define PLUGIN_VERSION "1.1"
+#define PLUGIN_VERSION "1.2"
 
 //Bit Macros
 #define SetBit(%1,%2)      (%1[%2>>5] |= (1<<(%2 & 31)))
@@ -19,11 +19,13 @@
 ConVar g_ConVar_Distance; //Distance ConVar
 ConVar g_ConVar_CheckDelay; //Check Delay ConVar
 ConVar g_ConVar_UndoDelay; //Undo Delay ConVar
+ConVar g_ConVar_Alpha; //Alpha ConVar
 float g_fCheckTime[MAXPLAYERS+1]; //Player check time array
 float g_fUndoTime[MAXPLAYERS+1]; //Player undo time array
 float g_fDistance; //Distance ConVar
 float g_fCheckDelay; //Check Delay ConVar
 float g_fUndoDelay; //Undo Delay ConVar
+int g_iAlpha;
 int g_iTagged[(MAXPLAYERS >> 5) + 1]; //Bool array whether player is transparent or not
 int g_iSkip[(MAXPLAYERS >> 5) + 1]; //Bool array whether player is zombie / invalid or not
 
@@ -50,6 +52,10 @@ public void OnPluginStart()
 	g_fUndoDelay = GetConVarFloat(g_ConVar_UndoDelay);
 	HookConVarChange(g_ConVar_UndoDelay, OnConVarChanged);
 	
+	g_ConVar_Alpha = CreateConVar("sm_transparency_alpha", "145", "Alpha value for transparency (0 being transparent, 255 being opaque)", 0, true, 0.0, true, 255.0);
+	g_iAlpha = GetConVarInt(g_ConVar_Alpha);
+	HookConVarChange(g_ConVar_Alpha, OnConVarChanged);
+	
 	HookEvent("player_spawned", OnPlayerSpawned);
 }
 
@@ -61,6 +67,8 @@ public void OnConVarChanged(ConVar convar, const char[] oldVal, const char[] new
 		g_fCheckDelay = StringToFloat(newVal);
 	} else if (convar == g_ConVar_UndoDelay) {
 		g_fUndoDelay = StringToFloat(newVal);
+	} else if (convar == g_ConVar_Alpha) {
+		g_iAlpha = StringToInt(newVal);
 	}
 }
 
@@ -168,7 +176,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				{
 					SetBit(g_iTagged, i);
 					SetEntityRenderMode(i, RENDER_TRANSCOLOR);
-					SetEntityRenderColor(i, 0,0,0,100);
+					SetEntityRenderColor(i, 0,0,0,g_iAlpha);
 				}
 				g_fUndoTime[i] = GetGameTime() + g_fUndoDelay;
 				g_fUndoTime[client] = GetGameTime() + g_fUndoDelay;
@@ -201,7 +209,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		for (int i = 1; i <= MaxClients; i++)
 		{
 			//Iteration is current player OR already transparent
-			if ((i == client) || CheckBit(g_iTagged, i) || (g_fCheckTime[i] > GetGameTime()))
+			if ((i == client) || (g_fCheckTime[i] > GetGameTime()))
 			{
 				continue;
 			}
@@ -212,6 +220,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				continue;
 			}
 			
+			//Don't compare me to a zombie
 			if (CheckBit(g_iSkip, i))
 			{
     			continue;
@@ -222,13 +231,15 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			
 			if (GetVectorDistance(clientOrigin, compOrigin) < g_fDistance) {
 				//Tag both players, make transparent and break the loop
-				SetBit(g_iTagged, i);
-				SetEntityRenderMode(i, RENDER_TRANSCOLOR);
-				SetEntityRenderColor(i, 0,0,0,100);
-				g_fUndoTime[i] = GetGameTime() + g_fUndoDelay;
+				if (!CheckBit(g_iTagged, i)) {
+					SetBit(g_iTagged, i);
+					SetEntityRenderMode(i, RENDER_TRANSCOLOR);
+					SetEntityRenderColor(i, 0,0,0, g_iAlpha);
+					g_fUndoTime[i] = GetGameTime() + g_fUndoDelay;
+				}
 				SetBit(g_iTagged, client);
 				SetEntityRenderMode(client, RENDER_TRANSCOLOR);
-				SetEntityRenderColor(client, 0,0,0,100);
+				SetEntityRenderColor(client, 0,0,0, g_iAlpha);
 				g_fUndoTime[client] = GetGameTime() + g_fUndoDelay;
 				break;
 			}
