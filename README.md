@@ -1,11 +1,11 @@
 # ZR_Transparency
 Humans in close proximity become transparent <br>
-**Requires sv_disable_immunity_alpha "1"**
+
 <br><br>
 ## Convars:
 ```
 sm_transparency_distance
-Default value "200.0"
+Default value "100.0"
 Description - Distance within which the player is made transparent
 ```
 ```
