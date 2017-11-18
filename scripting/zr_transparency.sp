@@ -8,7 +8,7 @@
 #pragma newdecls required
 
 #define PLUGIN_AUTHOR "Agent Wesker"
-#define PLUGIN_VERSION "1.6"
+#define PLUGIN_VERSION "1.7"
 
 //Bit Macros
 #define SetBit(%1,%2)      (%1[%2>>5] |= (1<<(%2 & 31)))
@@ -41,7 +41,7 @@ public Plugin myinfo =  {
 public void OnPluginStart()
 {	
 	
-	g_ConVar_Distance = CreateConVar("sm_transparency_distance", "200.0", "Distance within which the player is made transparent", 0, true, 0.0, true, 10000.0);
+	g_ConVar_Distance = CreateConVar("sm_transparency_distance", "100.0", "Distance within which the player is made transparent", 0, true, 0.0, true, 10000.0);
 	g_fDistance = GetConVarFloat(g_ConVar_Distance);
 	HookConVarChange(g_ConVar_Distance, OnConVarChanged);
 	
@@ -194,7 +194,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				if (!CheckBit(g_iTagged, i))
 				{
 					SetBit(g_iTagged, i);
-					SetEntityRenderMode(i, RENDER_TRANSALPHA);
+					SetEntityRenderMode(i, RENDER_TRANSCOLOR);
 					SetEntityRenderColor(i, 255,255,255, g_iAlpha);
 				}
 				g_fUndoTime[i] = GetGameTime() + g_fUndoDelay;
@@ -253,12 +253,12 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				//Tag both players, make transparent and break the loop
 				if (!CheckBit(g_iTagged, i)) {
 					SetBit(g_iTagged, i);
-					SetEntityRenderMode(i, RENDER_TRANSALPHA);
+					SetEntityRenderMode(i, RENDER_TRANSCOLOR);
 					SetEntityRenderColor(i, 255,255,255, g_iAlpha);
 					g_fUndoTime[i] = GetGameTime() + g_fUndoDelay;
 				}
 				SetBit(g_iTagged, client);
-				SetEntityRenderMode(client, RENDER_TRANSALPHA);
+				SetEntityRenderMode(client, RENDER_TRANSCOLOR);
 				SetEntityRenderColor(client, 255,255,255, g_iAlpha);
 				g_fUndoTime[client] = GetGameTime() + g_fUndoDelay;
 				break;
