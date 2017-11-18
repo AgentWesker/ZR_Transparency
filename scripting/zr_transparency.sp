@@ -8,7 +8,7 @@
 #pragma newdecls required
 
 #define PLUGIN_AUTHOR "Agent Wesker"
-#define PLUGIN_VERSION "1.2"
+#define PLUGIN_VERSION "1.3"
 
 //Bit Macros
 #define SetBit(%1,%2)      (%1[%2>>5] |= (1<<(%2 & 31)))
@@ -84,8 +84,8 @@ public void OnPlayerSpawned(Event event, const char[] name, bool dontBroadcast)
 		ClearBit(g_iSkip, client);
 	}
 	//Reset player visibility
-	SetEntityRenderMode(client, RENDER_NONE);
-	SetEntityRenderColor(client, 0,0,0,0); 
+	SetEntityRenderMode(client, RENDER_NORMAL);
+	SetEntityRenderColor(client, 255,255,255,255);
 }
 
 /**
@@ -103,8 +103,8 @@ public int ZR_OnClientInfected(int client, int attacker, bool motherinfect, bool
 {
 	//Tag zombie player so they are removed from loop & reset their visibility
 	SetBit(g_iSkip, client);
-	SetEntityRenderMode(client, RENDER_NONE);
-	SetEntityRenderColor(client, 0,0,0,0); 
+	SetEntityRenderMode(client, RENDER_NORMAL);
+	SetEntityRenderColor(client, 255,255,255,255);
 }
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
@@ -175,8 +175,8 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				if (!CheckBit(g_iTagged, i))
 				{
 					SetBit(g_iTagged, i);
-					SetEntityRenderMode(i, RENDER_TRANSCOLOR);
-					SetEntityRenderColor(i, 0,0,0,g_iAlpha);
+					SetEntityRenderMode(i, RENDER_TRANSALPHA);
+					SetEntityRenderColor(i, 255,255,255, g_iAlpha);
 				}
 				g_fUndoTime[i] = GetGameTime() + g_fUndoDelay;
 				g_fUndoTime[client] = GetGameTime() + g_fUndoDelay;
@@ -188,8 +188,8 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		if (virginity)
 		{
 			ClearBit(g_iTagged, client);
-			SetEntityRenderMode(client, RENDER_NONE);
-   			SetEntityRenderColor(client, 0,0,0,0);
+			SetEntityRenderMode(client, RENDER_NORMAL);
+   			SetEntityRenderColor(client, 255,255,255,255);
    			g_fCheckTime[client] = GetGameTime() + g_fCheckDelay;
 		}
 		
@@ -233,13 +233,13 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				//Tag both players, make transparent and break the loop
 				if (!CheckBit(g_iTagged, i)) {
 					SetBit(g_iTagged, i);
-					SetEntityRenderMode(i, RENDER_TRANSCOLOR);
-					SetEntityRenderColor(i, 0,0,0, g_iAlpha);
+					SetEntityRenderMode(i, RENDER_TRANSALPHA);
+					SetEntityRenderColor(i, 255,255,255, g_iAlpha);
 					g_fUndoTime[i] = GetGameTime() + g_fUndoDelay;
 				}
 				SetBit(g_iTagged, client);
-				SetEntityRenderMode(client, RENDER_TRANSCOLOR);
-				SetEntityRenderColor(client, 0,0,0, g_iAlpha);
+				SetEntityRenderMode(client, RENDER_TRANSALPHA);
+				SetEntityRenderColor(client, 255,255,255, g_iAlpha);
 				g_fUndoTime[client] = GetGameTime() + g_fUndoDelay;
 				break;
 			}
