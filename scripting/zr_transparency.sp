@@ -8,7 +8,7 @@
 #pragma newdecls required
 
 #define PLUGIN_AUTHOR "Agent Wesker"
-#define PLUGIN_VERSION "1.3"
+#define PLUGIN_VERSION "1.5"
 
 //Bit Macros
 #define SetBit(%1,%2)      (%1[%2>>5] |= (1<<(%2 & 31)))
@@ -20,6 +20,7 @@ ConVar g_ConVar_Distance; //Distance ConVar
 ConVar g_ConVar_CheckDelay; //Check Delay ConVar
 ConVar g_ConVar_UndoDelay; //Undo Delay ConVar
 ConVar g_ConVar_Alpha; //Alpha ConVar
+ConVar g_ConVar_Immunity;
 float g_fCheckTime[MAXPLAYERS+1]; //Player check time array
 float g_fUndoTime[MAXPLAYERS+1]; //Player undo time array
 float g_fDistance; //Distance ConVar
@@ -57,6 +58,14 @@ public void OnPluginStart()
 	HookConVarChange(g_ConVar_Alpha, OnConVarChanged);
 	
 	HookEvent("player_spawned", OnPlayerSpawned);
+	
+	g_ConVar_Immunity = FindConVar("sv_disable_immunity_alpha");
+	if (g_ConVar_Immunity == null)
+		return;
+		
+	SetConVarInt(g_ConVar_Immunity, 1);
+	
+	HookConVarChange(g_ConVar_Immunity, OnConVarChanged);
 }
 
 public void OnConVarChanged(ConVar convar, const char[] oldVal, const char[] newVal)
@@ -69,6 +78,8 @@ public void OnConVarChanged(ConVar convar, const char[] oldVal, const char[] new
 		g_fUndoDelay = StringToFloat(newVal);
 	} else if (convar == g_ConVar_Alpha) {
 		g_iAlpha = StringToInt(newVal);
+	} else if (convar == g_ConVar_Immunity) {
+		SetConVarInt(g_ConVar_Immunity, 1);
 	}
 }
 
@@ -83,6 +94,7 @@ public void OnPlayerSpawned(Event event, const char[] name, bool dontBroadcast)
 	} else {
 		ClearBit(g_iSkip, client);
 	}
+	
 	//Reset player visibility
 	SetEntityRenderMode(client, RENDER_NORMAL);
 	SetEntityRenderColor(client, 255,255,255,255);
@@ -121,7 +133,13 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	}
 	
 	//Skip invalid players
-	if (!IsClientInGame(client) || !IsPlayerAlive(client) || ZR_IsClientZombie(client))
+	if (!IsClientInGame(client) || !IsPlayerAlive(client))
+	{
+		return Plugin_Continue;
+	}
+	
+	//Skip zombies
+	if (ZR_IsClientZombie(client))
 	{
 		SetBit(g_iSkip, client);
 		return Plugin_Continue;
@@ -140,7 +158,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		float clientOrigin[3], compOrigin[3];
 		
 		//Get the origin vector for client
-		GetEntPropVector(client, Prop_Send, "m_vecOrigin", clientOrigin);
+		GetClientAbsOrigin(client, clientOrigin);
 		
 		bool virginity = true;
 		
@@ -167,10 +185,11 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
     			continue;
 			}
 			
-			//Get the origin vector for victim
-			GetEntPropVector(i, Prop_Send, "m_vecOrigin", compOrigin);
+			//Get the origin vector for compare
+			GetClientAbsOrigin(i, compOrigin);
+			float distance = GetVectorDistance(clientOrigin, compOrigin);
 			
-			if (GetVectorDistance(clientOrigin, compOrigin) < g_fDistance)
+			if (distance < g_fDistance)
 			{
 				if (!CheckBit(g_iTagged, i))
 				{
@@ -204,12 +223,12 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		float clientOrigin[3], compOrigin[3];
 		
 		//Get the origin vector for client
-		GetEntPropVector(client, Prop_Send, "m_vecOrigin", clientOrigin);
+		GetClientAbsOrigin(client, clientOrigin);
 		
 		for (int i = 1; i <= MaxClients; i++)
 		{
 			//Iteration is current player OR already transparent
-			if ((i == client) || (g_fCheckTime[i] > GetGameTime()))
+			if (i == client)
 			{
 				continue;
 			}
@@ -227,9 +246,10 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			}
 			
 			//Get the origin vector for victim
-			GetEntPropVector(i, Prop_Send, "m_vecOrigin", compOrigin);
+			GetClientAbsOrigin(i, compOrigin);
+			float distance = GetVectorDistance(clientOrigin, compOrigin);
 			
-			if (GetVectorDistance(clientOrigin, compOrigin) < g_fDistance) {
+			if (distance < g_fDistance) {				
 				//Tag both players, make transparent and break the loop
 				if (!CheckBit(g_iTagged, i)) {
 					SetBit(g_iTagged, i);
@@ -266,4 +286,4 @@ stock bool IsValidClient(int client)
 		return false;
 	}
 	return true;
-}  
+} 
