@@ -1,7 +1,6 @@
 # ZR_Transparency
 Humans in close proximity become transparent <br>
-
-<br><br>
+<br>
 ## Convars:
 ```
 sm_transparency_distance
