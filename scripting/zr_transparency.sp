@@ -8,7 +8,7 @@
 #pragma newdecls required
 
 #define PLUGIN_AUTHOR "Agent Wesker"
-#define PLUGIN_VERSION "1.5"
+#define PLUGIN_VERSION "1.6"
 
 //Bit Macros
 #define SetBit(%1,%2)      (%1[%2>>5] |= (1<<(%2 & 31)))
@@ -57,7 +57,7 @@ public void OnPluginStart()
 	g_iAlpha = GetConVarInt(g_ConVar_Alpha);
 	HookConVarChange(g_ConVar_Alpha, OnConVarChanged);
 	
-	HookEvent("player_spawned", OnPlayerSpawned);
+	HookEvent("player_spawn", OnPlayerSpawn);
 	
 	g_ConVar_Immunity = FindConVar("sv_disable_immunity_alpha");
 	if (g_ConVar_Immunity == null)
@@ -83,7 +83,7 @@ public void OnConVarChanged(ConVar convar, const char[] oldVal, const char[] new
 	}
 }
 
-public void OnPlayerSpawned(Event event, const char[] name, bool dontBroadcast)
+public void OnPlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	g_fCheckTime[client] = 0.0;
